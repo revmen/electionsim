@@ -4,15 +4,15 @@ import (
 	"math"
 )
 
-func findUtilityWinner(e Electorate) (string, float64) {
+func findUtilityWinner(e Electorate) (int, float64) {
 	numVoters := len(e.Voters)
 
-	winnerName := "nobody"
+	winner := -1
 	var winnerUtil float64
 
 	var util float64
 
-	for i, c := range e.Candidates {
+	for i := range e.Candidates {
 		util = 0.0
 
 		for _, v := range e.Voters {
@@ -21,13 +21,13 @@ func findUtilityWinner(e Electorate) (string, float64) {
 
 		util = util / float64(numVoters)
 		if util > winnerUtil {
-			winnerName = c.Name
+			winner = i
 			winnerUtil = util
 		}
 
 	}
 
-	return winnerName, winnerUtil
+	return winner, winnerUtil
 }
 
 //calculates the utilty for a voter from an elected candidate based on their distance in ideological space

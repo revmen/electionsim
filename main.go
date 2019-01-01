@@ -11,10 +11,11 @@ func main() {
 	electorates := createElectorates(params)
 
 	for _, e := range electorates {
+		fmt.Println("-----")
 		e.UtilityWinner, e.MaxUtility = findUtilityWinner(e)
-		fmt.Println("utility winner", e.UtilityWinner)
+		fmt.Println("utility winner", candidateInfo(e.UtilityWinner, e))
 		e.CondorcetWinner = findCondorcetWinner(e)
-		fmt.Println("condorcet winner", e.CondorcetWinner)
+		fmt.Println("condorcet winner", candidateInfo(e.CondorcetWinner, e))
 		// if "no condorcet winner" == e.CondorcetWinner {
 		// 	//fmt.Println(i, len(e.Candidates), "candidates")
 		// 	//fmt.Println("utilty", uName)
@@ -24,7 +25,26 @@ func main() {
 		// }
 		pe := PluralityElection{}
 		pe.DoElection(e)
-		fmt.Println("plurality winner", pe.Winner)
+		fmt.Println("plurality winner", candidateInfo(pe.Winner, e))
 	}
 
+}
+
+func candidateInfo(i int, e Electorate) string {
+	var major string
+	var name string
+
+	if i < 0 {
+		major = ""
+		name = "none"
+	} else {
+		name = e.Candidates[i].Name
+		if e.Candidates[i].Major {
+			major = "(major)"
+		} else {
+			major = ""
+		}
+	}
+
+	return fmt.Sprintf("%s %s", name, major)
 }

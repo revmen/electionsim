@@ -4,25 +4,26 @@ import (
 //"fmt"
 )
 
-func findCondorcetWinner(e Electorate) string {
-	winnerName := "no condorcet winner"
+func findCondorcetWinner(e Electorate) int {
+	winner := -1
 
 Loop:
-	for i1, c1 := range e.Candidates {
-		for i2, c2 := range e.Candidates {
-			if c1.Name == c2.Name {
+	for i := range e.Candidates {
+		for j := range e.Candidates {
+			if i == j {
 				continue
 			}
 
-			if headToHead(e, i1, i2) == false {
+			if headToHead(e, i, j) == false {
 				continue Loop
 			}
 		}
 
-		winnerName = c1.Name
+		winner = i
+		break
 	}
 
-	return winnerName
+	return winner
 }
 
 // true if the candidate at index 1 (i1) beats the candidate at index 2 (i2) in a head-to-head matchup

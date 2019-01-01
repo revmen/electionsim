@@ -6,7 +6,7 @@ import (
 
 //PluralityElection is a type of election
 type PluralityElection struct {
-	Winner  string
+	Winner  int //index of winning candidate
 	Ballots []PluralityBallot
 }
 
@@ -16,7 +16,7 @@ func (pe *PluralityElection) DoElection(e Electorate) {
 
 	for _, v := range e.Voters {
 		if v.Strategic {
-			pe.VoteStrategic(v)
+			pe.VoteStrategic(v, e)
 		} else {
 			pe.Vote(v)
 		}
@@ -33,7 +33,7 @@ func (pe *PluralityElection) DoElection(e Electorate) {
 	for i := range votes {
 		if votes[i] > winningVotes {
 			winningVotes = votes[i]
-			pe.Winner = e.Candidates[i].Name
+			pe.Winner = i
 		}
 	}
 }
@@ -53,10 +53,18 @@ func (pe *PluralityElection) Vote(v Voter) {
 
 }
 
-//VoteStrategic creates a ballot for a voter that is strategic
-func (pe *PluralityElection) VoteStrategic(v Voter) {
-	//will implement strategic voting after major party candidates are included
-	pe.Vote(v)
+//VoteStrategic creates a ballot for a voter that always votes for a major candidate
+func (pe *PluralityElection) VoteStrategic(v Voter, e Electorate) {
+	iMax := 0
+	uMax := 0.0
+	for i, u := range v.Utilities {
+		if u > uMax && e.Candidates[i].Major {
+			uMax = u
+			iMax = i
+		}
+	}
+
+	pe.Ballots = append(pe.Ballots, PluralityBallot{Choice: iMax})
 }
 
 //PluralityBallot has a single field that holds the index of the chosen candidate

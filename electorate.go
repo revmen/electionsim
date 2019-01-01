@@ -10,8 +10,8 @@ type Electorate struct {
 	Voters          []Voter     //slice of all voters in electorate
 	Candidates      []Candidate //slice of all candidates
 	MaxUtility      float64     //average utility per voter for max utility candidate
-	UtilityWinner   string      //name of max utility candidate
-	CondorcetWinner string      //name of the condorcet winner
+	UtilityWinner   int         //index of max utility candidate
+	CondorcetWinner int         //index of the condorcet winner
 }
 
 //Voter represents an individual voter with unique alignments in each axis and a flag for whether the voter is "strategic"
@@ -25,6 +25,7 @@ type Voter struct {
 type Candidate struct {
 	Name       string
 	Alignments []float64
+	Major      bool //true if the candidate is from a "major party"
 }
 
 func createElectorates(params AppParams) []Electorate {
@@ -43,7 +44,11 @@ func makeElectorate(params AppParams) Electorate {
 	numCandidates := r.Intn(params.MaxCandidates-params.MinCandidates+1) + params.MinCandidates
 	candidates := make([]Candidate, numCandidates)
 	for i := 0; i < numCandidates; i++ {
-		candidates[i] = makeCandidate(params.Names[i], params.NumAxes, r)
+		if i < params.NumMajorCandidates {
+			candidates[i] = makeMajorCandidate(params.Names[i], params.NumAxes, i, r)
+		} else {
+			candidates[i] = makeCandidate(params.Names[i], params.NumAxes, r)
+		}
 	}
 
 	numVoters := r.Intn(params.MaxVoters-params.MinVoters+1) + params.MinVoters
@@ -97,6 +102,29 @@ func makeCandidate(name string, numAxes int, r *rand.Rand) Candidate {
 	c := Candidate{
 		Alignments: axes,
 		Name:       name,
+		Major:      false,
+	}
+
+	return c
+}
+
+func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand) Candidate {
+	axes := make([]float64, numAxes)
+
+	//which quadrant/octant candidate is in based on whether index is even or odd
+	zone := index % 2
+	min := float64(zone) * 0.5
+	max := float64(zone)*0.5 + 0.5
+
+	//a major candidate has all of their alignments in the same quadrant/octant, where axis crossing are at 0.5
+	for i := 0; i < len(axes); i++ {
+		axes[i] = min + r.Float64()*(max-min)
+	}
+
+	c := Candidate{
+		Alignments: axes,
+		Name:       name,
+		Major:      true,
 	}
 
 	return c
