@@ -13,7 +13,7 @@ type AppParams struct {
 	StrategicVoters    float64  //chance that a voter is "strategic"
 	MinCandidates      int      //lower limit of randomly chosen number of candidates
 	MaxCandidates      int      //upper limit of randomly chosen number of candidates
-	NumMajorCandidates int      //the number of candidates representing "major parties"
+	NumMajorCandidates int      //the number of candidates representing "major parties". This should be either 0 or 2
 	NumAxes            int      //the number of ideological axis that voters and candidates should align to
 	Names              []string //list of all possible names for candidates. Must be at least as long as MaxCandidates
 }

@@ -7,18 +7,20 @@ import (
 
 //Electorate is a collection of Voters and Candidates
 type Electorate struct {
-	Voters          []Voter     //slice of all voters in electorate
-	Candidates      []Candidate //slice of all candidates
-	MaxUtility      float64     //average utility per voter for max utility candidate
-	UtilityWinner   int         //index of max utility candidate
-	CondorcetWinner int         //index of the condorcet winner
+	Voters          []Voter           //slice of all voters in electorate
+	Candidates      []Candidate       //slice of all candidates
+	MaxUtility      float64           //average utility per voter for max utility candidate
+	UtilityWinner   int               //index of max utility candidate
+	CondorcetWinner int               //index of the condorcet winner
+	Methods         map[string]Method //map of Method interfaces with name of election method as key
 }
 
 //Voter represents an individual voter with unique alignments in each axis and a flag for whether the voter is "strategic"
 type Voter struct {
-	Alignments []float64 //the ideological alignment of the voter based on scores in axes
-	Strategic  bool      //whether or not hte voter votes "strategically"
-	Utilities  []float64 //the utilty the voter has for each candidate
+	Alignments        []float64 //the ideological alignment of the voter based on scores in axes
+	Strategic         bool      //whether or not hte voter votes "strategically"
+	Utilities         []float64 //the utilty the voter has for each candidate
+	ApprovalThreshold float64   //the utility threshold required for a voter to be OK with a candidate
 }
 
 //Candidate is a single ballot choice with specific alignments
@@ -60,6 +62,7 @@ func makeElectorate(params AppParams) Electorate {
 	e := Electorate{
 		Voters:     voters,
 		Candidates: candidates,
+		Methods:    make(map[string]Method),
 	}
 
 	return e
@@ -75,9 +78,10 @@ func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *
 	utilities := make([]float64, len(candidates))
 
 	v := Voter{
-		Alignments: axes,
-		Strategic:  isStrategic(strategicChance, r),
-		Utilities:  utilities,
+		Alignments:        axes,
+		Strategic:         isStrategic(strategicChance, r),
+		Utilities:         utilities,
+		ApprovalThreshold: 0.5,
 	}
 
 	for i, c := range candidates {

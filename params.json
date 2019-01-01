@@ -1,12 +1,12 @@
 {
-	"NumElectorates": 10,
+	"NumElectorates": 25,
 	"MinVoters": 10000,
 	"MaxVoters": 50000,
-	"StrategicVoters": 0.85,
+	"StrategicVoters": 0.5,
 	"MinCandidates": 3,
-	"MaxCandidates": 5,
+	"MaxCandidates": 6,
 	"NumMajorCandidates": 2,
 	"NumAxes": 3,
-	"Names": ["Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima", 
-		"Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Vvictor", "Whiskey", "Xray", "Yankee", "Zero"]
+	"Names": ["Albatross", "Bear", "Crocodile", "Dog", "Elephant", "Fox", "Giraffe", "Horse", "Iguana", "Jaguar", "Kangaroo", "Llama", 
+		"Monkey", "Newt", "Owl", "Penguin", "Quail", "Rabbit", "Snake", "Tiger", "Unicorn", "Vulture", "Walrus", "Xerus", "Yak", "Zebra"]
 }

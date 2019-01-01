@@ -10,22 +10,34 @@ func main() {
 
 	electorates := createElectorates(params)
 
+	for i, e := range electorates {
+		//create and run plurality method
+		pm := PluralityMethod{}
+		electorates[i].Methods["Plurality"] = &pm
+		pm.Create(&e)
+		pm.Run()
+
+		//create and run approval method
+		am := ApprovalMethod{}
+		electorates[i].Methods["Approval"] = &am
+		am.Create(&e)
+		am.Run()
+	}
+
 	for _, e := range electorates {
 		fmt.Println("-----")
-		e.UtilityWinner, e.MaxUtility = findUtilityWinner(e)
-		fmt.Println("utility winner", candidateInfo(e.UtilityWinner, e))
-		e.CondorcetWinner = findCondorcetWinner(e)
-		fmt.Println("condorcet winner", candidateInfo(e.CondorcetWinner, e))
-		// if "no condorcet winner" == e.CondorcetWinner {
-		// 	//fmt.Println(i, len(e.Candidates), "candidates")
-		// 	//fmt.Println("utilty", uName)
-		// 	//fmt.Println("condorcet", cName)
-		// 	//fmt.Printf("%# v", pretty.Formatter(e))
-		// 	printPluralityVotes(e)
-		// }
-		pe := PluralityElection{}
-		pe.DoElection(e)
-		fmt.Println("plurality winner", candidateInfo(pe.Winner, e))
+
+		e.findUtilityWinner()
+		fmt.Println("Utility", candidateInfo(e.UtilityWinner, e))
+
+		e.findCondorcetWinner()
+		fmt.Println("Condorcet", candidateInfo(e.CondorcetWinner, e))
+
+		for name, method := range e.Methods {
+			fmt.Println(name, candidateInfo(method.GetWinner(), e))
+
+		}
+
 	}
 
 }

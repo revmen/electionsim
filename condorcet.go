@@ -4,7 +4,7 @@ import (
 //"fmt"
 )
 
-func findCondorcetWinner(e Electorate) int {
+func (e *Electorate) findCondorcetWinner() {
 	winner := -1
 
 Loop:
@@ -14,7 +14,7 @@ Loop:
 				continue
 			}
 
-			if headToHead(e, i, j) == false {
+			if e.headToHead(i, j) == false {
 				continue Loop
 			}
 		}
@@ -23,11 +23,11 @@ Loop:
 		break
 	}
 
-	return winner
+	e.CondorcetWinner = winner
 }
 
 // true if the candidate at index 1 (i1) beats the candidate at index 2 (i2) in a head-to-head matchup
-func headToHead(e Electorate, i1, i2 int) bool {
+func (e *Electorate) headToHead(i1, i2 int) bool {
 	votes := 0
 
 	for _, v := range e.Voters {

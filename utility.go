@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-func findUtilityWinner(e Electorate) (int, float64) {
+func (e *Electorate) findUtilityWinner() {
 	numVoters := len(e.Voters)
 
 	winner := -1
@@ -27,7 +27,8 @@ func findUtilityWinner(e Electorate) (int, float64) {
 
 	}
 
-	return winner, winnerUtil
+	e.UtilityWinner = winner
+	e.MaxUtility = winnerUtil
 }
 
 //calculates the utilty for a voter from an elected candidate based on their distance in ideological space
@@ -46,7 +47,7 @@ func utility(v Voter, c Candidate) float64 {
 	return 1 - d
 }
 
-//the direct distance between two sets of alignments
+//the geometric distance between two sets of alignments
 func distance(a1, a2 []float64) float64 {
 	numAxes := len(a1)
 
@@ -57,4 +58,18 @@ func distance(a1, a2 []float64) float64 {
 	}
 
 	return math.Sqrt(d)
+}
+
+//finds the candidate with the highest utility in a voter's utilities
+func findFavorite(utilities []float64) int {
+	iMax := 0
+	uMax := 0.0
+	for i, u := range utilities {
+		if u > uMax {
+			uMax = u
+			iMax = i
+		}
+	}
+
+	return iMax
 }
