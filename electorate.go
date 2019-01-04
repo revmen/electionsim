@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -30,59 +31,135 @@ type Candidate struct {
 	Major      bool //true if the candidate is from a "major party"
 }
 
+//Report is a summary of the performance of all methods run in an electorate
+type Report struct {
+	NumVoters       int                   //number of voters in the electorate
+	NumCandidates   int                   //number of candidates on the ballot
+	CondorcetWinner int                   //index of condorcet winner
+	UtilityWinner   int                   //index of highest utility candidate
+	Lines           map[string]ReportLine //summary for each method, name of method as key
+}
+
+//ReportLine is a single line in a report, covering one voting method
+type ReportLine struct {
+	Winner     int     //index of the winning Candidate
+	Efficiency float64 //the fraction of maximum possible efficiency achieved with the winning candidate
+	Condorcet  int     //whether the Condorcet winner was elected. 0 for false, 1 for true, -1 means there was no Condorcet winner.
+}
+
+//GetReport creates and returns a Report
+func (e *Electorate) GetReport() Report {
+	r := Report{
+		NumVoters:       len(e.Voters),
+		NumCandidates:   len(e.Candidates),
+		CondorcetWinner: e.CondorcetWinner,
+		UtilityWinner:   e.UtilityWinner,
+		Lines:           make(map[string]ReportLine),
+	}
+
+	for name, m := range e.Methods {
+		c := -1
+
+		if e.CondorcetWinner > -1 {
+			if e.CondorcetWinner == m.GetWinner() {
+				c = 1
+			} else {
+				c = 0
+			}
+		}
+
+		r.Lines[name] = ReportLine{
+			Winner:     m.GetWinner(),
+			Efficiency: m.GetUtility() / e.MaxUtility,
+			Condorcet:  c,
+		}
+	}
+
+	return r
+}
+
 func createElectorates(params AppParams) []Electorate {
 	electorates := make([]Electorate, params.NumElectorates)
 
 	for i := 0; i < params.NumElectorates; i++ {
-		electorates[i] = makeElectorate(params)
+		//electorates[i] = makeElectorate(params)
+		electorates[i] = Electorate{}
 	}
+
+	//random source that needs to be protected if used concurrently
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	var mu sync.Mutex
+
+	//waitgroup for concurrent creation of electorates
+	var wg sync.WaitGroup
+
+	for i := range electorates {
+		wg.Add(1)
+		go electorates[i].MakeElectorate(params, r, &wg, &mu)
+	}
+
+	wg.Wait()
 
 	return electorates
 }
 
-func makeElectorate(params AppParams) Electorate {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+//MakeElectorate populates an electorate with voters and candidates and identifies the utility and condorcet winners
+func (e *Electorate) MakeElectorate(params AppParams, r *rand.Rand, wg *sync.WaitGroup, mu *sync.Mutex) {
+	defer wg.Done()
 
+	//decide number of candidates
+	mu.Lock()
 	numCandidates := r.Intn(params.MaxCandidates-params.MinCandidates+1) + params.MinCandidates
-	candidates := make([]Candidate, numCandidates)
+	mu.Unlock()
+
+	//create candidates
+	e.Candidates = make([]Candidate, numCandidates)
 	for i := 0; i < numCandidates; i++ {
 		if i < params.NumMajorCandidates {
-			candidates[i] = makeMajorCandidate(params.Names[i], params.NumAxes, i, r)
+			e.Candidates[i] = makeMajorCandidate(params.Names[i], params.NumAxes, i, r, mu)
 		} else {
-			candidates[i] = makeCandidate(params.Names[i], params.NumAxes, r)
+			e.Candidates[i] = makeCandidate(params.Names[i], params.NumAxes, r, mu)
 		}
 	}
 
+	//decide number of voters
+	mu.Lock()
 	numVoters := r.Intn(params.MaxVoters-params.MinVoters+1) + params.MinVoters
-	voters := make([]Voter, numVoters)
+	mu.Unlock()
+
+	//create Voters
+	e.Voters = make([]Voter, numVoters)
 	for i := 0; i < numVoters; i++ {
-		voters[i] = makeVoter(params.NumAxes, params.StrategicVoters, candidates, r)
+		e.Voters[i] = makeVoter(params.NumAxes, params.StrategicVoters, e.Candidates, r, mu)
 	}
 
-	e := Electorate{
-		Voters:     voters,
-		Candidates: candidates,
-		Methods:    make(map[string]Method),
-	}
+	//create map for methods
+	e.Methods = make(map[string]Method)
 
-	return e
+	//determine the utility and condorcet winners
+	e.findUtilityWinner()
+	e.findCondorcetWinner()
 }
 
-func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *rand.Rand) Voter {
+func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *rand.Rand, mu *sync.Mutex) Voter {
 	axes := make([]float64, numAxes)
 
+	mu.Lock()
 	for i := 0; i < len(axes); i++ {
 		axes[i] = r.Float64()
 	}
+	mu.Unlock()
 
 	utilities := make([]float64, len(candidates))
 
+	mu.Lock()
 	v := Voter{
 		Alignments:        axes,
-		Strategic:         isStrategic(strategicChance, r),
+		Strategic:         r.Float64() <= strategicChance,
 		Utilities:         utilities,
 		ApprovalThreshold: 0.5,
 	}
+	mu.Unlock()
 
 	for i, c := range candidates {
 		utilities[i] = utility(v, c)
@@ -91,17 +168,14 @@ func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *
 	return v
 }
 
-func isStrategic(strategicChance float64, r *rand.Rand) bool {
-	v := r.Float64()
-	return v <= strategicChance
-}
-
-func makeCandidate(name string, numAxes int, r *rand.Rand) Candidate {
+func makeCandidate(name string, numAxes int, r *rand.Rand, mu *sync.Mutex) Candidate {
 	axes := make([]float64, numAxes)
 
+	mu.Lock()
 	for i := 0; i < len(axes); i++ {
 		axes[i] = r.Float64()
 	}
+	mu.Unlock()
 
 	c := Candidate{
 		Alignments: axes,
@@ -112,7 +186,7 @@ func makeCandidate(name string, numAxes int, r *rand.Rand) Candidate {
 	return c
 }
 
-func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand) Candidate {
+func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand, mu *sync.Mutex) Candidate {
 	axes := make([]float64, numAxes)
 
 	//which quadrant/octant candidate is in based on whether index is even or odd
@@ -121,9 +195,11 @@ func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand) Candi
 	max := float64(zone)*0.5 + 0.5
 
 	//a major candidate has all of their alignments in the same quadrant/octant, where axis crossing are at 0.5
+	mu.Lock()
 	for i := 0; i < len(axes); i++ {
 		axes[i] = min + r.Float64()*(max-min)
 	}
+	mu.Unlock()
 
 	c := Candidate{
 		Alignments: axes,

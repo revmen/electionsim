@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
 //PluralityMethod is a type of election method that can be used through the Method interface
 type PluralityMethod struct {
-	Electorate *Electorate
-	Winner     int //index of winning candidate
-	Ballots    []PluralityBallot
+	Electorate *Electorate       //reference to relevant electorate
+	Winner     int               //index of winning candidate
+	Ballots    []PluralityBallot //slice containing all ballots
+	Utility    float64           //average utility per voter achieved by winning candidate
 }
 
 //Create creates the struct members needed to run the election
@@ -23,8 +25,14 @@ func (m *PluralityMethod) GetWinner() int {
 	return m.Winner
 }
 
+//GetUtility returns the average utility for the winning candidate
+func (m *PluralityMethod) GetUtility() float64 {
+	return m.Utility
+}
+
 //Run creates ballots and tabulates the winner
-func (m *PluralityMethod) Run() {
+func (m *PluralityMethod) Run(wg *sync.WaitGroup) {
+	defer wg.Done()
 
 	for _, v := range m.Electorate.Voters {
 		if v.Strategic {
@@ -48,6 +56,18 @@ func (m *PluralityMethod) Run() {
 			m.Winner = i
 		}
 	}
+
+	m.calcUtility()
+}
+
+//calculates the average utility for the winning candidate
+func (m *PluralityMethod) calcUtility() {
+	u := 0.0
+	for _, v := range m.Electorate.Voters {
+		u += v.Utilities[m.Winner]
+	}
+
+	m.Utility = u / float64(len(m.Electorate.Voters))
 }
 
 //Vote creates a ballot for an honest voter
