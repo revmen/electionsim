@@ -1,9 +1,8 @@
 package main
 
-import (
-//"fmt"
-)
+import ()
 
+//identifies the condorcet winner, if any, for an electorate
 func (e *Electorate) findCondorcetWinner() {
 	winner := -1
 

@@ -1,13 +1,10 @@
 package main
 
-import (
-//"fmt"
-//"sync"
-)
+import ()
 
 //PluralityMethod is a type of election method that can be used through the Method interface
 type PluralityMethod struct {
-	Electorate *Electorate       //reference to relevant electorate
+	Electorate *Electorate       //reference to parent electorate for convenience
 	Winner     int               //index of winning candidate
 	Ballots    []PluralityBallot //slice containing all ballots
 	Utility    float64           //average utility per voter achieved by winning candidate
@@ -61,7 +58,7 @@ func (m *PluralityMethod) Run() {
 	m.Ballots = nil
 }
 
-//calculates the average utility for the winning candidate
+//calculates the per-voter utility for the winning candidate
 func (m *PluralityMethod) calcUtility() {
 	u := 0.0
 	for _, v := range m.Electorate.Voters {

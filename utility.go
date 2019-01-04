@@ -4,6 +4,7 @@ import (
 	"math"
 )
 
+//identifies the candidate that would provide the highest possible utility to an electorate
 func (e *Electorate) findUtilityWinner() {
 	numVoters := len(e.Voters)
 

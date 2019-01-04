@@ -3,7 +3,6 @@ package main
 import (
 	"math/rand"
 	"sync"
-	//"time"
 )
 
 //Electorate is a collection of Voters and Candidates
@@ -47,7 +46,7 @@ type ReportLine struct {
 	Condorcet  int     //whether the Condorcet winner was elected. 0 for false, 1 for true, -1 means there was no Condorcet winner.
 }
 
-//GetReport creates and returns a Report
+//GetReport creates and returns a Report, which is a summary of the performance of methods tested for this electorate
 func (e *Electorate) GetReport() Report {
 	r := Report{
 		NumVoters:       len(e.Voters),
@@ -60,6 +59,8 @@ func (e *Electorate) GetReport() Report {
 	for name, m := range e.Methods {
 		c := -1
 
+		//mark whether the condorcet winner was matched by this method
+		//value of -1 means there is no condorcet winner
 		if e.CondorcetWinner > -1 {
 			if e.CondorcetWinner == m.GetWinner() {
 				c = 1
@@ -68,6 +69,7 @@ func (e *Electorate) GetReport() Report {
 			}
 		}
 
+		//add the method's result to the report
 		r.Lines[name] = ReportLine{
 			Winner:     m.GetWinner(),
 			Efficiency: m.GetUtility() / e.MaxUtility,
@@ -81,9 +83,10 @@ func (e *Electorate) GetReport() Report {
 func makeElectorate(params *AppParams, r *rand.Rand, mu *sync.Mutex) Electorate {
 	e := Electorate{}
 
-	//decide number of candidates
+	//lock random number generator, decide number of candidates, decide number of voters
 	mu.Lock()
 	numCandidates := r.Intn(params.MaxCandidates-params.MinCandidates+1) + params.MinCandidates
+	numVoters := r.Intn(params.MaxVoters-params.MinVoters+1) + params.MinVoters
 	mu.Unlock()
 
 	//create candidates
@@ -96,11 +99,6 @@ func makeElectorate(params *AppParams, r *rand.Rand, mu *sync.Mutex) Electorate 
 		}
 	}
 
-	//decide number of voters
-	mu.Lock()
-	numVoters := r.Intn(params.MaxVoters-params.MinVoters+1) + params.MinVoters
-	mu.Unlock()
-
 	//create Voters
 	e.Voters = make([]Voter, numVoters)
 	for i := 0; i < numVoters; i++ {
@@ -110,33 +108,38 @@ func makeElectorate(params *AppParams, r *rand.Rand, mu *sync.Mutex) Electorate 
 	//create map for methods
 	e.Methods = make(map[string]Method)
 
-	//determine the utility and condorcet winners
+	//determine the utility and condorcet winners for this electorate
 	e.findUtilityWinner()
 	e.findCondorcetWinner()
 
 	return e
 }
 
+//create a single voter
 func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *rand.Rand, mu *sync.Mutex) Voter {
+	//create the ideological axes
 	axes := make([]float64, numAxes)
 
+	//lock the random number generator, populate the axes, decide whether voter is strategic
 	mu.Lock()
 	for i := 0; i < len(axes); i++ {
 		axes[i] = r.Float64()
 	}
+	isStrategic := r.Float64() <= strategicChance
 	mu.Unlock()
 
+	//create slice of utilities used to hold voter's utility from each candidate
 	utilities := make([]float64, len(candidates))
 
-	mu.Lock()
+	//assemble Voter struct
 	v := Voter{
 		Alignments:        axes,
-		Strategic:         r.Float64() <= strategicChance,
+		Strategic:         isStrategic,
 		Utilities:         utilities,
 		ApprovalThreshold: 0.5,
 	}
-	mu.Unlock()
 
+	//determine voter's utilities
 	for i, c := range candidates {
 		utilities[i] = utility(v, c)
 	}
@@ -144,15 +147,19 @@ func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *
 	return v
 }
 
+//creates a single candidate that is not a "major"
 func makeCandidate(name string, numAxes int, r *rand.Rand, mu *sync.Mutex) Candidate {
+	//create the ideological axes
 	axes := make([]float64, numAxes)
 
+	//lock the random number generator and populate the axes
 	mu.Lock()
 	for i := 0; i < len(axes); i++ {
 		axes[i] = r.Float64()
 	}
 	mu.Unlock()
 
+	//populate and return Candidate struct
 	c := Candidate{
 		Alignments: axes,
 		Name:       name,
@@ -162,7 +169,9 @@ func makeCandidate(name string, numAxes int, r *rand.Rand, mu *sync.Mutex) Candi
 	return c
 }
 
+//creates a single candidate that is a "major"
 func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand, mu *sync.Mutex) Candidate {
+	//create the ideological axes
 	axes := make([]float64, numAxes)
 
 	//which quadrant/octant candidate is in based on whether index is even or odd
@@ -170,6 +179,7 @@ func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand, mu *s
 	min := float64(zone) * 0.5
 	max := float64(zone)*0.5 + 0.5
 
+	//lock the random number generator and populate the axes
 	//a major candidate has all of their alignments in the same quadrant/octant, where axis crossing are at 0.5
 	mu.Lock()
 	for i := 0; i < len(axes); i++ {
@@ -177,6 +187,7 @@ func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand, mu *s
 	}
 	mu.Unlock()
 
+	//populate and return Candidate struct
 	c := Candidate{
 		Alignments: axes,
 		Name:       name,

@@ -1,8 +1,6 @@
 package main
 
-import (
-//"sync"
-)
+import ()
 
 //ApprovalMethod is a type of election method that can be used through the Method interface
 type ApprovalMethod struct {

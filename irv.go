@@ -1,9 +1,6 @@
 package main
 
-import (
-//"fmt"
-//"sync"
-)
+import ()
 
 //IRVMethod is a type of election method that can be used through the Method interface
 type IRVMethod struct {

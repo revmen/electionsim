@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-	//"github.com/kr/pretty"
 )
 
 func main() {
@@ -45,7 +44,7 @@ func main() {
 	fmt.Printf("Analysis took %s \n", elapsed)
 }
 
-//promps runWorker to start jobs at a metered pace
+//prompts runWorker to start jobs at a pace determined by the size of the startChan and number of workers
 func startWorker(params *AppParams, startChan chan bool) {
 	//start a job for each electorate
 	for i := 0; i < params.NumElectorates; i++ {
@@ -53,7 +52,8 @@ func startWorker(params *AppParams, startChan chan bool) {
 	}
 }
 
-//worker that pulls an electorate from the the queue and processes it
+//worker that creates and processes an electorate
+//electorates can be large, so don't allow too many to exist at once or you'll run out of memory
 func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Electorate, r *rand.Rand, mu *sync.Mutex) {
 
 	for range startChan {
@@ -82,6 +82,8 @@ func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Elec
 	}
 }
 
+//worker that collects results of all elections and compiles them into a summary
+//only 1 of these should be run at a time
 func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan chan string) {
 	//create summary containers
 	efficiencies := make(map[string]float64)
@@ -125,6 +127,7 @@ func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan c
 	close(summaryChan)
 }
 
+//will print out summary information for a single electorate. Not useful for large studies
 func printReport(e *Electorate) {
 	r := e.GetReport()
 	//fmt.Printf("%+v \n", r)
@@ -137,6 +140,7 @@ func printReport(e *Electorate) {
 	}
 }
 
+//creates a string for a single candidate that's useful for examining small numbers of electorates
 func candidateInfo(i int, e *Electorate) string {
 	var major string
 	var name string

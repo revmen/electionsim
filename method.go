@@ -1,10 +1,8 @@
 package main
 
-import (
-//"sync"
-)
+import ()
 
-//Method interface to allow general functions to call functions in any election mehtod
+//Method interface to allow general functions to call functions in any election method
 type Method interface {
 	Create(*Electorate)
 	Run()
