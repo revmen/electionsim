@@ -16,6 +16,7 @@ type AppParams struct {
 	NumMajorCandidates int      //the number of candidates representing "major parties". This should be either 0 or 2
 	NumAxes            int      //the number of ideological axis that voters and candidates should align to
 	Names              []string //list of all possible names for candidates. Must be at least as long as MaxCandidates
+	NumWorkers         int      //number of concurrent workers to spawn for processing elections
 }
 
 func readParams() AppParams {

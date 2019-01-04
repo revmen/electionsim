@@ -1,7 +1,7 @@
 package main
 
 import (
-	"sync"
+//"sync"
 )
 
 //ApprovalMethod is a type of election method that can be used through the Method interface
@@ -30,22 +30,21 @@ func (m *ApprovalMethod) GetUtility() float64 {
 }
 
 //Run creates ballots and tabulates the winner
-func (m *ApprovalMethod) Run(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (m *ApprovalMethod) Run() {
 
-	for i, v := range m.Electorate.Voters {
-		if v.Strategic {
-			m.Ballots[i] = m.VoteStrategic(v)
+	for i := range m.Electorate.Voters {
+		if m.Electorate.Voters[i].Strategic {
+			m.Ballots[i] = m.VoteStrategic(&m.Electorate.Voters[i])
 		} else {
-			m.Ballots[i] = m.Vote(v)
+			m.Ballots[i] = m.Vote(&m.Electorate.Voters[i])
 		}
 	}
 
 	votes := make([]int, len(m.Electorate.Candidates))
 
 	for i := range m.Ballots {
-		for j, a := range m.Ballots[i].Approvals {
-			if a {
+		for j := range m.Ballots[i].Approvals {
+			if m.Ballots[i].Approvals[j] {
 				votes[j]++
 			}
 		}
@@ -61,6 +60,8 @@ func (m *ApprovalMethod) Run(wg *sync.WaitGroup) {
 	}
 
 	m.calcUtility()
+
+	m.Ballots = nil
 }
 
 //calculates the average utility for the winning candidate
@@ -74,7 +75,7 @@ func (m *ApprovalMethod) calcUtility() {
 }
 
 //Vote creates a ballot for an honest voter
-func (m *ApprovalMethod) Vote(v Voter) ApprovalBallot {
+func (m *ApprovalMethod) Vote(v *Voter) ApprovalBallot {
 	ballot := ApprovalBallot{Approvals: make([]bool, len(v.Utilities))}
 
 	for i, u := range v.Utilities {
@@ -90,7 +91,7 @@ func (m *ApprovalMethod) Vote(v Voter) ApprovalBallot {
 }
 
 //VoteStrategic creates a ballot for a strategic voter
-func (m *ApprovalMethod) VoteStrategic(v Voter) ApprovalBallot {
+func (m *ApprovalMethod) VoteStrategic(v *Voter) ApprovalBallot {
 	//strategic approval voters will bullet vote if their preferred candidate is a major
 	//if their favorite is not a major, they will vote honestly
 

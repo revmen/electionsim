@@ -1,8 +1,8 @@
 package main
 
 import (
-	//"fmt"
-	"sync"
+//"fmt"
+//"sync"
 )
 
 //IRVMethod is a type of election method that can be used through the Method interface
@@ -38,15 +38,14 @@ func (m *IRVMethod) GetUtility() float64 {
 }
 
 //Run creates ballots and tabulates the winner
-func (m *IRVMethod) Run(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (m *IRVMethod) Run() {
 
 	//fmt.Println("creating IRV ballots")
-	for i, v := range m.Electorate.Voters {
-		if v.Strategic {
-			m.Ballots[i] = m.VoteStrategic(v)
+	for i := range m.Electorate.Voters {
+		if m.Electorate.Voters[i].Strategic {
+			m.Ballots[i] = m.VoteStrategic(&m.Electorate.Voters[i])
 		} else {
-			m.Ballots[i] = m.Vote(v)
+			m.Ballots[i] = m.Vote(&m.Electorate.Voters[i])
 		}
 	}
 
@@ -70,6 +69,8 @@ func (m *IRVMethod) Run(wg *sync.WaitGroup) {
 	m.Winner = ci
 
 	m.calcUtility()
+
+	//m.Ballots = nil
 }
 
 //if there is a winner, returns (true, winner index), otherwise returns (false, last place index)
@@ -80,22 +81,27 @@ func (m *IRVMethod) checkForWinner() (bool, int) {
 	loser := -1
 	lowVotes := len(m.Ballots)
 
-	for k, b := range m.Buckets {
+	for k := range m.Buckets {
 		//fmt.Println(k, len(b))
 
-		if len(b) > highVotes {
+		if len(m.Buckets[k]) > highVotes {
 			leader = k
-			highVotes = len(b)
+			highVotes = len(m.Buckets[k])
+
+			//if the leading candidate has a majority, they are the winner
+			if highVotes > len(m.Ballots)/2 {
+				return true, leader
+			}
 		}
 
-		if len(b) <= lowVotes {
+		if len(m.Buckets[k]) <= lowVotes {
 			loser = k
-			lowVotes = len(b)
+			lowVotes = len(m.Buckets[k])
 		}
 	}
 
-	//if the leading candidate has a majority or there are only 2 candidates left, there is a winner
-	if highVotes > len(m.Ballots)/2 || len(m.Buckets) == 2 {
+	//if there are only 2 candidates left, there is a winner
+	if len(m.Buckets) == 2 {
 		//fmt.Println("winner found", len(m.Buckets), len(m.Electorate.Candidates))
 		return true, leader
 	}
@@ -120,21 +126,21 @@ func (m *IRVMethod) eliminateCandidate(i int) {
 //move each ballot in slice provided to the bucket of the next remaining candidate
 func (m *IRVMethod) sortBallots(ballots []IRVBallot) {
 	//fmt.Println("sorting ballots")
-	for _, b := range ballots {
+	for k := range ballots {
 		for {
 			//increment choice on ballot
-			b.LastChoice++
+			ballots[k].LastChoice++
 
 			//see if that candidate remains
-			_, ok := m.Buckets[b.LastChoice]
+			_, ok := m.Buckets[ballots[k].LastChoice]
 
 			//if that candidate's index still exists, add ballot to bucket
 			if ok {
-				m.Buckets[b.Choices[b.LastChoice]] = append(m.Buckets[b.Choices[b.LastChoice]], b)
+				m.Buckets[ballots[k].Choices[ballots[k].LastChoice]] = append(m.Buckets[ballots[k].Choices[ballots[k].LastChoice]], ballots[k])
 				break
 
 				//if not, check to see if this ballot is expired and if so, discard ballot
-			} else if b.LastChoice > len(m.Electorate.Candidates) {
+			} else if ballots[k].LastChoice > len(m.Electorate.Candidates) {
 				break
 
 				//otherwise, try next choice
@@ -158,7 +164,7 @@ func (m *IRVMethod) calcUtility() {
 }
 
 //Vote creates a ballot for an honest voter
-func (m *IRVMethod) Vote(v Voter) IRVBallot {
+func (m *IRVMethod) Vote(v *Voter) IRVBallot {
 	ballot := IRVBallot{Choices: make([]int, 0), LastChoice: -1}
 
 UtilitiesLoop:
@@ -183,16 +189,59 @@ UtilitiesLoop:
 
 	}
 
-	//fmt.Println(ballot)
+	//fmt.Println("honest", ballot)
 	return ballot
 
 }
 
 //VoteStrategic creates a ballot for a strategic voter
-func (m *IRVMethod) VoteStrategic(v Voter) IRVBallot {
+func (m *IRVMethod) VoteStrategic(v *Voter) IRVBallot {
 	//strategic IRV voters will rank their preferred major candidate first and the other major candidate last
+	preferredMajor := findFavoriteMajor(v.Utilities, m.Electorate.Candidates)
+	otherMajor := findOtherMajor(preferredMajor, m.Electorate.Candidates)
 
-	return m.Vote(v)
+	ballot := IRVBallot{Choices: make([]int, 0), LastChoice: -1}
+
+	//first choice is preferred major
+	ballot.Choices = append(ballot.Choices, preferredMajor)
+
+UtilitiesLoop:
+
+	for i, u := range v.Utilities {
+
+		//skip the Major candidates because we know where they go already
+		if i == preferredMajor || i == otherMajor {
+			continue
+		}
+
+		for j, c := range ballot.Choices {
+
+			//skip the first spot because it's already set
+			if j == 0 {
+				continue
+			}
+
+			if u > v.Utilities[c] {
+				//insert i at j
+				ballot.Choices = append(ballot.Choices, 0)
+				copy(ballot.Choices[j+1:], ballot.Choices[j:])
+				ballot.Choices[j] = i
+
+				//next utility value
+				continue UtilitiesLoop
+			}
+		}
+
+		//if a lower value isn't found, append to bottom of Choices
+		ballot.Choices = append(ballot.Choices, i)
+
+	}
+
+	//put other major in last spot
+	ballot.Choices = append(ballot.Choices, otherMajor)
+
+	//fmt.Println("strategic", ballot)
+	return ballot
 }
 
 //IRVBallot has a slice with indices of candidates in preferential order

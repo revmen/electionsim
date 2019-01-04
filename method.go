@@ -1,13 +1,13 @@
 package main
 
 import (
-	"sync"
+//"sync"
 )
 
 //Method interface to allow general functions to call functions in any election mehtod
 type Method interface {
 	Create(*Electorate)
-	Run(*sync.WaitGroup)
+	Run()
 	GetWinner() int
 	GetUtility() float64
 }

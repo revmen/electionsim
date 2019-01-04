@@ -3,7 +3,7 @@ package main
 import (
 	"math/rand"
 	"sync"
-	"time"
+	//"time"
 )
 
 //Electorate is a collection of Voters and Candidates
@@ -78,34 +78,8 @@ func (e *Electorate) GetReport() Report {
 	return r
 }
 
-func createElectorates(params AppParams) []Electorate {
-	electorates := make([]Electorate, params.NumElectorates)
-
-	for i := 0; i < params.NumElectorates; i++ {
-		//electorates[i] = makeElectorate(params)
-		electorates[i] = Electorate{}
-	}
-
-	//random source that needs to be protected if used concurrently
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	var mu sync.Mutex
-
-	//waitgroup for concurrent creation of electorates
-	var wg sync.WaitGroup
-
-	for i := range electorates {
-		wg.Add(1)
-		go electorates[i].MakeElectorate(params, r, &wg, &mu)
-	}
-
-	wg.Wait()
-
-	return electorates
-}
-
-//MakeElectorate populates an electorate with voters and candidates and identifies the utility and condorcet winners
-func (e *Electorate) MakeElectorate(params AppParams, r *rand.Rand, wg *sync.WaitGroup, mu *sync.Mutex) {
-	defer wg.Done()
+func makeElectorate(params *AppParams, r *rand.Rand, mu *sync.Mutex) Electorate {
+	e := Electorate{}
 
 	//decide number of candidates
 	mu.Lock()
@@ -139,6 +113,8 @@ func (e *Electorate) MakeElectorate(params AppParams, r *rand.Rand, wg *sync.Wai
 	//determine the utility and condorcet winners
 	e.findUtilityWinner()
 	e.findCondorcetWinner()
+
+	return e
 }
 
 func makeVoter(numAxes int, strategicChance float64, candidates []Candidate, r *rand.Rand, mu *sync.Mutex) Voter {

@@ -60,16 +60,41 @@ func distance(a1, a2 []float64) float64 {
 	return math.Sqrt(d)
 }
 
-//finds the candidate with the highest utility in a voter's utilities
+//finds the candidate with the highest utility for voter
 func findFavorite(utilities []float64) int {
 	iMax := 0
 	uMax := 0.0
-	for i, u := range utilities {
-		if u > uMax {
-			uMax = u
+	for i := range utilities {
+		if utilities[i] > uMax {
+			uMax = utilities[i]
 			iMax = i
 		}
 	}
 
 	return iMax
+}
+
+//finds major candidate with highest utility for voter
+func findFavoriteMajor(utilities []float64, candidates []Candidate) int {
+	iMax := 0
+	uMax := 0.0
+	for i := range utilities {
+		if utilities[i] > uMax && candidates[i].Major {
+			uMax = utilities[i]
+			iMax = i
+		}
+	}
+
+	return iMax
+}
+
+//find a major candidate other than the one specified by firstMajor. If none, return 0
+func findOtherMajor(firstMajor int, candidates []Candidate) int {
+	for i := range candidates {
+		if candidates[i].Major && i != firstMajor {
+			return i
+		}
+	}
+
+	return 0
 }

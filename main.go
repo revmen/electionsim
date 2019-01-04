@@ -2,79 +2,130 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 	//"github.com/kr/pretty"
 )
 
 func main() {
+	start := time.Now()
+
+	//get user values from params.json
 	params := readParams()
 
-	//create electorates
-	electorates := createElectorates(params)
+	//random source that needs to be protected if used concurrently
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	var mu sync.Mutex
 
-	//create methods for each electorate
-	for i := range electorates {
+	//create job channels and workers
+	startChan := make(chan bool, params.NumWorkers)
+	reviewChan := make(chan *Electorate, params.NumWorkers)
+	summaryChan := make(chan string, params.NumWorkers)
 
-		//create plurality method
+	//start workers
+	for i := 0; i < params.NumWorkers; i++ {
+		go runWorker(&params, startChan, reviewChan, r, &mu)
+	}
+
+	go summaryWorker(&params, reviewChan, summaryChan)
+
+	//starting the startWorker will begin the analysis
+	go startWorker(&params, startChan)
+
+	//wait for results, which will be printed until a value comes over the doneChan
+	for line := range summaryChan {
+		fmt.Println(line)
+	}
+
+	close(startChan)
+	close(reviewChan)
+
+	elapsed := time.Since(start)
+	fmt.Printf("Analysis took %s \n", elapsed)
+}
+
+//promps runWorker to start jobs at a metered pace
+func startWorker(params *AppParams, startChan chan bool) {
+	//start a job for each electorate
+	for i := 0; i < params.NumElectorates; i++ {
+		startChan <- true
+	}
+}
+
+//worker that pulls an electorate from the the queue and processes it
+func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Electorate, r *rand.Rand, mu *sync.Mutex) {
+
+	for range startChan {
+		//create electorate
+		e := makeElectorate(params, r, mu)
+
+		//create methods
 		pm := PluralityMethod{}
-		electorates[i].Methods["Plurality"] = &pm
-		pm.Create(&electorates[i])
+		e.Methods["Plurality"] = &pm
+		pm.Create(&e)
 
-		//create approval method
 		am := ApprovalMethod{}
-		electorates[i].Methods["Approval"] = &am
-		am.Create(&electorates[i])
+		e.Methods["Approval"] = &am
+		am.Create(&e)
 
 		im := IRVMethod{}
-		electorates[i].Methods["IRV"] = &im
-		im.Create(&electorates[i])
+		e.Methods["IRV"] = &im
+		im.Create(&e)
 
-	}
-
-	var wg sync.WaitGroup
-
-	//run methods in each electorate
-	for i := range electorates {
-		for name := range electorates[i].Methods {
-			wg.Add(1)
-			go electorates[i].Methods[name].Run(&wg)
+		//run methods
+		for name := range e.Methods {
+			e.Methods[name].Run()
 		}
+
+		reviewChan <- &e
 	}
+}
 
-	wg.Wait()
-
+func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan chan string) {
+	//create summary containers
 	efficiencies := make(map[string]float64)
 	numEfficiencies := 0.0
 	condorcets := make(map[string]float64)
 	numCondorcets := 0.0
+	numCompleted := 0
 
-	for _, e := range electorates {
-		//fmt.Println("-----")
-		//printReport(e)
-
+	//extract results from completed electorates
+	for e := range reviewChan {
+		//add results to summaries
 		r := e.GetReport()
+
 		numEfficiencies += 1.0
 		if e.CondorcetWinner > -1 {
 			numCondorcets += 1.0
 		}
 
-		for n, l := range r.Lines {
-			efficiencies[n] += l.Efficiency
+		for m, l := range r.Lines {
+			efficiencies[m] += l.Efficiency
 			if e.CondorcetWinner > -1 {
-				condorcets[n] += float64(l.Condorcet)
+				condorcets[m] += float64(l.Condorcet)
 			}
+		}
+
+		numCompleted++
+
+		if numCompleted >= params.NumElectorates {
+			break
 		}
 	}
 
+	//complete summary and pass text lines to main process
 	for n, eff := range efficiencies {
 		eff = eff / numEfficiencies
 		con := condorcets[n] / numCondorcets
-		fmt.Printf("%s: %.3f %.2f \n", n, eff, con)
+		summaryChan <- fmt.Sprintf("%s: %.3f %.2f", n, eff, con)
 	}
 
+	//signal completion of study by closing the summaryChan
+	close(summaryChan)
 }
 
-func printReport(e Electorate) {
+func printReport(e *Electorate) {
 	r := e.GetReport()
 	//fmt.Printf("%+v \n", r)
 	fmt.Printf("Voters: %v\n", r.NumVoters)
@@ -86,7 +137,7 @@ func printReport(e Electorate) {
 	}
 }
 
-func candidateInfo(i int, e Electorate) string {
+func candidateInfo(i int, e *Electorate) string {
 	var major string
 	var name string
 
