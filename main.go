@@ -13,6 +13,8 @@ func main() {
 	//get user values from params.json
 	params := readParams()
 
+	printParams(&params)
+
 	//random source that needs to be protected if used concurrently
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var mu sync.Mutex
@@ -41,7 +43,7 @@ func main() {
 	close(reviewChan)
 
 	elapsed := time.Since(start)
-	fmt.Printf("Analysis took %s \n", elapsed)
+	fmt.Printf("execution took %s \n", elapsed)
 }
 
 //prompts runWorker to start jobs at a pace determined by the size of the startChan and number of workers
@@ -98,6 +100,10 @@ func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan c
 		//add results to summaries
 		r := e.GetReport()
 
+		if params.NumElectorates <= 10 {
+			printReport(e)
+		}
+
 		numEfficiencies += 1.0
 		if e.CondorcetWinner > -1 {
 			numCondorcets += 1.0
@@ -118,13 +124,14 @@ func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan c
 	}
 
 	//table header
-	summaryChan <- fmt.Sprintf("Method | Utility Efficiency | Condorcet Percent")
+	summaryChan <- fmt.Sprintf("----------")
+	summaryChan <- fmt.Sprintf("Method  Utility Efficiency  Condorcet Percent")
 
 	//complete summary and pass text lines to main process
 	for n, eff := range efficiencies {
 		eff = eff / numEfficiencies
 		con := condorcets[n] / numCondorcets
-		summaryChan <- fmt.Sprintf("%s |    %.3f    |   %.2f", n, eff, con)
+		summaryChan <- fmt.Sprintf("%s     %.3f     %.2f", n, eff, con)
 	}
 
 	//signal completion of study by closing the summaryChan
@@ -134,7 +141,7 @@ func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan c
 //will print out summary information for a single electorate. Not useful for large studies
 func printReport(e *Electorate) {
 	r := e.GetReport()
-	//fmt.Printf("%+v \n", r)
+	fmt.Println("----------")
 	fmt.Printf("Voters: %v\n", r.NumVoters)
 	fmt.Printf("Candidates: %v\n", r.NumCandidates)
 	fmt.Printf("Utility: %s\n", candidateInfo(r.UtilityWinner, e))

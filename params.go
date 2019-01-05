@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 )
 
@@ -33,4 +34,13 @@ func readParams() AppParams {
 	}
 
 	return params
+}
+
+func printParams(params *AppParams) {
+	fmt.Println("Electorates:", params.NumElectorates)
+	fmt.Println("Voters:", params.MinVoters, "to", params.MaxVoters)
+	fmt.Println("Strategic Voters:", params.StrategicVoters)
+	fmt.Println("Candidates:", params.MinCandidates, "to", params.MaxCandidates)
+	fmt.Println("Axes:", params.NumAxes)
+	fmt.Println(params.NumWorkers, "workers")
 }
