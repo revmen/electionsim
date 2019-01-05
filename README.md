@@ -2,11 +2,11 @@
 
 Here is yet another election simulator. This is similar to and in the same spirit as Warren Smith's work. I wrote this as an exercise and to increase my own understanding of voting methods.
 
-I am very interested in feedback, both from voting enthusiasts and from programmers. I'm an amateur in both ways and it's a guarantee that I've made mistakes.
+I am very interested in feedback, both from voting enthusiasts and from programmers. I'm an amateur in both ways and it's a guarantee that I've made mistakes. Comments and contributions are welcome.
 
-This tool is written in Go, which is an easy-to-read language that has very useful concurrency tools. Go can take advantage of today's multi-thread processors and operating systems to crank through large tests faster.
+This is written in Go. Go is an easy-to-read language that has very useful concurrency tools. Go can take advantage of today's multi-thread processors and operating systems to crank through large tests faster.
 
-The code is organized into files that each contain one major building block.
+The code is organized into files that each contain major building blocks.
 
 ## Electorate
 An Electorate is a single struct that includes all of the Voters and Candidates that would take part in an election. There are a few additional tools and values used for analysis. These structs and functions are found on electorate.go.
@@ -43,7 +43,7 @@ To encourage others to submit new Methods, I've kept all of the complicated conc
 The user-definable parameters are found in params.go and can be set by the user in params.json. If you're not planning on doing any programming and just want to run the software, params.json is the only file you should edit.
 
 #### NumElectorates
-The number of unique electorates to test each method against. A high number produces a more statistically significant result. In early testing, it seems that anything above 2000 doesn't change the results.
+The number of unique electorates to test each method against. A high number produces a more statistically significant result. In early testing, it seems that anything above 5000 doesn't change the results.
 
 #### MinVoters and MaxVoters
 The number of voters in an electorate will be randomly selected to be between these values. With a range of 10,000 to 30,000, early testing shows results that aren't really any different from higher values.
@@ -68,5 +68,7 @@ The number of ideological axes on which each voter and candidates alignment will
 Just a list of names for candidates to be used when observing results from individual elections. This type of analysis isn't currently included, so these names are mostly for testing.
 
 #### NumWorkers
-This sets the number of concurrent workers that will be used to process elections concurrently. The higher this number, the more processor memory the program will use. This number should be lower for older or simpler machines.
+This sets the number of concurrent workers that will be used to process elections concurrently. The higher this number, the more processor memory the program will use. This has no effect on the results. This number should be lower for older or simpler machines.
+
+It's actually possible for this value to be too high. Right now, the summary tells you how long it took to run the simulation, so it should be easy to try different values to discover the most efficient setting for your machine.
 

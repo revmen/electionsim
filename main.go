@@ -117,11 +117,14 @@ func summaryWorker(params *AppParams, reviewChan chan *Electorate, summaryChan c
 		}
 	}
 
+	//table header
+	summaryChan <- fmt.Sprintf("Method | Utility Efficiency | Condorcet Percent")
+
 	//complete summary and pass text lines to main process
 	for n, eff := range efficiencies {
 		eff = eff / numEfficiencies
 		con := condorcets[n] / numCondorcets
-		summaryChan <- fmt.Sprintf("%s: %.3f %.2f", n, eff, con)
+		summaryChan <- fmt.Sprintf("%s |    %.3f    |   %.2f", n, eff, con)
 	}
 
 	//signal completion of study by closing the summaryChan

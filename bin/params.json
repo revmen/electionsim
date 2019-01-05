@@ -1,0 +1,13 @@
+{
+	"NumElectorates": 1000,
+	"MinVoters": 10000,
+	"MaxVoters": 30000,
+	"StrategicVoters": 0.25,
+	"MinCandidates": 3,
+	"MaxCandidates": 6,
+	"NumMajorCandidates": 2,
+	"NumAxes": 3,
+	"Names": ["Albatross", "Bear", "Crocodile", "Dog", "Elephant", "Fox", "Giraffe", "Horse", "Iguana", "Jaguar", "Kangaroo", "Llama", 
+		"Monkey", "Newt", "Owl", "Penguin", "Quail", "Rabbit", "Snake", "Tiger", "Unicorn", "Vulture", "Walrus", "Xerus", "Yak", "Zebra"],
+	"NumWorkers": 100
+}
