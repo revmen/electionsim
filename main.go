@@ -78,6 +78,7 @@ func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Elec
 			e.Methods[name].Run()
 		}
 
+		//pass on to summaryWorker
 		reviewChan <- &e
 	}
 }
