@@ -63,17 +63,30 @@ func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Elec
 		e := makeElectorate(params, r, mu)
 
 		//create methods
-		pm := PluralityMethod{}
-		e.Methods["Plurality"] = &pm
-		pm.Create(&e)
 
-		am := ApprovalMethod{}
-		e.Methods["Approval"] = &am
-		am.Create(&e)
+		if includeMethod("Plurality", params) {
+			pm := PluralityMethod{}
+			e.Methods["Plurality"] = &pm
+			pm.Create(&e)
+		}
 
-		im := IRVMethod{}
-		e.Methods["IRV"] = &im
-		im.Create(&e)
+		if includeMethod("Approval", params) {
+			am := ApprovalMethod{}
+			e.Methods["Approval"] = &am
+			am.Create(&e)
+		}
+
+		if includeMethod("IRV", params) {
+			im := IRVMethod{}
+			e.Methods["IRV"] = &im
+			im.Create(&e)
+		}
+
+		if includeMethod("PairwiseElim", params) {
+			pem := PairwiseElimMethod{}
+			e.Methods["PairwiseElim"] = &pem
+			pem.Create(&e)
+		}
 
 		//run methods
 		for name := range e.Methods {

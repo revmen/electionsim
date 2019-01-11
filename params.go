@@ -15,6 +15,7 @@ type AppParams struct {
 	MinCandidates      int      //lower limit of randomly chosen number of candidates
 	MaxCandidates      int      //upper limit of randomly chosen number of candidates
 	NumMajorCandidates int      //the number of candidates representing "major parties". This should be either 0 or 2
+	Methods            []string //list of methods that should be included in the analysis
 	NumAxes            int      //the number of ideological axis that voters and candidates should align to
 	Names              []string //list of all possible names for candidates. Must be at least as long as MaxCandidates
 	NumWorkers         int      //number of concurrent workers to spawn for processing elections
@@ -41,6 +42,18 @@ func printParams(params *AppParams) {
 	fmt.Println("Voters:", params.MinVoters, "to", params.MaxVoters)
 	fmt.Println("Strategic Voters:", params.StrategicVoters)
 	fmt.Println("Candidates:", params.MinCandidates, "to", params.MaxCandidates)
+	fmt.Println("Methods:", params.Methods)
 	fmt.Println("Axes:", params.NumAxes)
 	fmt.Println(params.NumWorkers, "workers")
+}
+
+//returns true if the specified method is included in the app params
+func includeMethod(method string, params *AppParams) bool {
+	for _, m := range params.Methods {
+		if m == method {
+			return true
+		}
+	}
+
+	return false
 }
