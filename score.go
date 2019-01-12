@@ -58,8 +58,8 @@ func (method *ScoreMethod) vote(voter *Voter, favoriteMajorIndex int) []int {
 	return linearScale(voter.Utilities, method.min, method.max)
 }
 
-// linearScale returns a copy of _list_ with its values linearly scaled such that its smallest values becomes min andits largest value becomes max
-// If all values in list are the same, the returned list is of zeros
+// linearScale returns a copy of _list_ with its values linearly scaled such that its smallest value becomes min and its largest value becomes max
+// If all values in list are the same, the values will all be zero instead
 func linearScale(list []float64, min, max int) []int {
 	result := make([]int, len(list))
 
