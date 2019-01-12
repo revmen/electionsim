@@ -67,6 +67,12 @@ func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Elec
 		e.Methods["Plurality"] = &pm
 		pm.Create(&e)
 
+		/* Alternative ApprovalMethod that uses ScoreMethod internally
+		nam := NewAdaptedScoreMethod(0, 1)
+		e.Methods["ApprovalNew"] = &nam
+		nam.Create(&e)
+		*/
+
 		am := ApprovalMethod{}
 		e.Methods["Approval"] = &am
 		am.Create(&e)
@@ -74,6 +80,10 @@ func runWorker(params *AppParams, startChan <-chan bool, reviewChan chan<- *Elec
 		im := IRVMethod{}
 		e.Methods["IRV"] = &im
 		im.Create(&e)
+
+		sm := NewAdaptedScoreMethod(0, 5)
+		e.Methods["Score"] = &sm
+		sm.Create(&e)
 
 		//run methods
 		for name := range e.Methods {
