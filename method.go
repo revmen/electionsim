@@ -27,22 +27,22 @@ func AdaptSimpleMethod(method SimpleMethod) AdaptedMethod {
 }
 
 // Create initializes the adapter
-func (method *AdaptedMethod) Create(electorate *Electorate) {
-	method.electorate = electorate
+func (m *AdaptedMethod) Create(electorate *Electorate) {
+	m.electorate = electorate
 }
 
 // Run calculates and records the index of the winner and their average utility
-func (method *AdaptedMethod) Run() {
-	method.winner = method.internalMethod.FindWinner(method.electorate)
-	method.utility = method.electorate.AverageUtilityOf(method.winner)
+func (m *AdaptedMethod) Run() {
+	m.winner = m.internalMethod.FindWinner(m.electorate)
+	m.utility = m.electorate.AverageUtilityOf(m.winner)
 }
 
 // GetWinner is an accessor for the index of the winner found by Run()
-func (method *AdaptedMethod) GetWinner() int {
-	return method.winner
+func (m *AdaptedMethod) GetWinner() int {
+	return m.winner
 }
 
 // GetUtility is an accessor for the average utility of the winner
-func (method *AdaptedMethod) GetUtility() float64 {
-	return method.utility
+func (m *AdaptedMethod) GetUtility() float64 {
+	return m.utility
 }

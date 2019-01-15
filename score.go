@@ -21,12 +21,13 @@ func NewAdaptedScoreMethod(min, max int) AdaptedMethod {
 }
 
 // FindWinner finds the index of the Score winner of the provided Electorate.
-func (method *ScoreMethod) FindWinner(electorate *Electorate) int {
+func (m *ScoreMethod) FindWinner(electorate *Electorate) int {
 	sums := make([]int, len(electorate.Candidates))
 
 	for _, voter := range electorate.Voters {
 		favoriteMajor := findFavoriteMajor(voter.Utilities, electorate.Candidates)
-		for j, score := range method.vote(&voter, favoriteMajor) {
+		theshold := voter.Utilities[favoriteMajor]
+		for j, score := range m.vote(&voter, theshold) {
 			sums[j] += score
 		}
 	}
@@ -48,18 +49,17 @@ func findLargestIndex(list []int) int {
 	return largestIndex
 }
 
-func (method *ScoreMethod) vote(voter *Voter, favoriteMajorIndex int) []int {
+func (m *ScoreMethod) vote(voter *Voter, strategicThreshold float64) []int {
 
 	if voter.Strategic {
-		threshold := voter.Utilities[favoriteMajorIndex]
-		return thresholdClamp(voter.Utilities, threshold, method.min, method.max)
+		return thresholdClamp(voter.Utilities, strategicThreshold, m.min, m.max)
 	}
 
-	return linearScale(voter.Utilities, method.min, method.max)
+	return linearScale(voter.Utilities, m.min, m.max)
 }
 
-// linearScale returns a copy of _list_ with its values linearly scaled such that its smallest value becomes min and its largest value becomes max
-// If all values in list are the same, the values will all be zero instead
+// linearScale returns a copy of "list" with its values linearly scaled such that its smallest value becomes "min" and its largest value becomes "max"
+// If all values in "list" are the same, the final values will all be zero instead
 func linearScale(list []float64, min, max int) []int {
 	result := make([]int, len(list))
 
@@ -85,15 +85,15 @@ func linearScale(list []float64, min, max int) []int {
 		// largest shifted down, then scaled to (max-min), then min is added (ends up at max)
 		shifted := util - smallest
 		scaled := shifted * scalefactor
-		rounded := int(math.Floor(scaled + 0.5)) // Apparently my version of go doesn't have math.Round(x). But I think math.Floor(x+0.5) is basically the same thing.
+		rounded := int(math.Floor(scaled + 0.5))
 		result[i] = rounded + min
 	}
 
 	return result
 }
 
-// thresholdClamp returns a copy of _list_ with its values clamped such that values below a specified threshold become min and the remainder become max.
-// Values equal to threshold becomes max.
+// thresholdClamp returns a copy of "list" with its values clamped such that values below a specified "threshold" become "min" and the remainder become "max".
+// Values equal to "threshold" become "max".
 func thresholdClamp(list []float64, threshold float64, min, max int) []int {
 
 	clamped := make([]int, len(list))
