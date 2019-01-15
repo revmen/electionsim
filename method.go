@@ -34,7 +34,7 @@ func (m *AdaptedMethod) Create(electorate *Electorate) {
 // Run calculates and records the index of the winner and their average utility
 func (m *AdaptedMethod) Run() {
 	m.winner = m.internalMethod.FindWinner(m.electorate)
-	m.utility = m.electorate.AverageUtilityOf(m.winner)
+	m.utility = m.electorate.UtilityOf(m.winner)
 }
 
 // GetWinner is an accessor for the index of the winner found by Run()
