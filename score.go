@@ -85,7 +85,7 @@ func linearScale(list []float64, min, max int) []int {
 		// largest shifted down, then scaled to (max-min), then min is added (ends up at max)
 		shifted := util - smallest
 		scaled := shifted * scalefactor
-		rounded := int(math.Floor(scaled + 0.5))
+		rounded := int(math.Round(scaled))
 		result[i] = rounded + min
 	}
 
