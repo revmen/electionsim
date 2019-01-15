@@ -196,3 +196,13 @@ func makeMajorCandidate(name string, numAxes int, index int, r *rand.Rand, mu *s
 
 	return c
 }
+
+//UtilityOf returns the average utility for the candidate at the specified index
+func (e *Electorate) UtilityOf(candidateIndex int) float64 {
+	sum := 0.0
+	for _, voter := range e.Voters {
+		sum += voter.Utilities[candidateIndex]
+	}
+
+	return sum / float64(len(e.Voters))
+}
